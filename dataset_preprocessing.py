@@ -25,18 +25,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
 
-def chunker(seq, size):
-    return (seq[pos:pos + size] for pos in range(0, len(seq), size))
-
-def hasAnomaly(group):
-    for item in group:
-        if item == 1:
-            return True
-    return False
-
-def extendAnomaly(group):
-    for i in range(1,len(group)):
-        group[i] = 1
 
 #leggo il dataset csv (in cui è stata eseguita una pivoting table)
 path = "G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\test2.csv"
@@ -70,38 +58,33 @@ for i in range(1,df.shape[1]):
 #Genero la heatmap
 ax = plt.axes()
 sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Blues")   #
-ax.set_title('Heatmap 1')
+ax.set_title('Heatmap no look Ahead')
 ax.xlabel = "Sensore"
 ax.ylabel = "Giorno"
 plt.figure()
 
 
 
-
+#Avvio la procedura di lookup 
 print("Avvio procedura lookup")
-la_days = 14
+la_days = 7                            #Parametro di look-ahead possible modificarlo
 for j in range(1,df.shape[1]):
     colonna = labeled_df[labeled_df.columns[j]]
     i = 1
     while(i<len(colonna)):       
-        if colonna[i] == 1:
-            #while(colonna[i] == 1):     #Se ci sono più anomalie di fila vado all'ultima
-            #    i = i + 1
-            #i = i -1                    #riporto l'indice all'ultima anomalia
+        if colonna[i] == 1:             #Condizione se anomalia
             #estendo l'anomalia
             for i in range(i,i+la_days):
-                colonna[i] = 1    
-            
-        i = i + 1
-            
-                           
-        
+                colonna[i] = 1               
+        i = i + 1  
     labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.
 
-#Genero la heatmap
+
+#Genero la heatmap 2 (con look-ahead)
 ax = plt.axes()
-sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Greens")   
-ax.set_title('Heatmap 2')
+sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Oranges")   
+title = "Look ahead " + str(la_days)
+ax.set_title(title)
 ax.xlabel = "Sensore"
 ax.ylabel = "Giorno"
 plt.figure()
