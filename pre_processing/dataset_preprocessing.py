@@ -19,11 +19,21 @@ Created on Wed Dec 30 17:17:20 2020
 """
 
 #Import.. 
-
+from pprint import pprint
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import silhouette_score
+
+#Colori per format output.
+W  = '\033[0m'  
+R  = '\033[31m'
+G  = '\033[32m'
+O  = '\033[33m' 
+B  = '\033[34m' 
+P  = '\033[35m' 
 
 
 def askInput(question):
@@ -33,6 +43,7 @@ def askInput(question):
             return True
         if reply[0] == 'n':
             return False
+        
         
 #leggo il dataset csv (in cui è stata eseguita una pivoting table)
 path = "G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\test2.csv"
@@ -63,8 +74,11 @@ for i in range(1,df.shape[1]):
     labeled_df.iloc[:,i] = colonna      #sostituisco la colonna nel nuovo dataset.    
     
     
-chHeatmap = askInput("Generare la heatmap? ")
+#Generazione heatmap 
+#chHeatmap = askInput("Generare la heatmap? ")
+chHeatmap = False #debug
 if chHeatmap:
+    print("--------- Heatmap & Labeling anomalie ---------")
     la = input("Inserire lookahead (in giorni) : ")
     #Genero la heatmap
     ax = plt.axes()
@@ -100,6 +114,47 @@ if chHeatmap:
     ax.ylabel = "Giorno"
     plt.figure()
     
+
+
+print("Avvio procedura di clustering")
+clusters = int(input("Inserire num clusters > "))
+
+
+anomaly_df = labeled_df[column_names_to_normalize].T
+kmeans_model = KMeans(n_clusters = clusters,random_state=2,n_init=10,algorithm="auto")
+label = kmeans_model.fit_predict(anomaly_df) #Stampo le labels
+silhouetteScore = silhouette_score(anomaly_df, label)
+centroids = kmeans_model.cluster_centers_
+u_labels = np.unique(label)
+
+table = [[]]
+
+
+for item in u_labels:
+   filtered = anomaly_df[label==item]    
+   row = []
+   for i in range(0,len(filtered)):
+       row.append(filtered.index[i])
+   table.append(row)
+
+table.remove(table[0])
+i = 0
+for row in table:
+    print(G+"Cluster ", i," Num. Items " + str(len(row)) + W)
+    print("Sensori :")
+    pprint(row)
+    i = i + 1
+print(G+"Silhouette score: ", str(silhouetteScore) +W)
+
+
+   
+   
+
+
+
+
+
+
 
 
 
