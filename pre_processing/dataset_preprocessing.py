@@ -26,6 +26,14 @@ import seaborn as sns
 import numpy as np
 
 
+def askInput(question):
+    while "the answer is invalid":
+        reply = str(input(question+' (y/n): ')).lower().strip()
+        if reply[0] == 'y':
+            return True
+        if reply[0] == 'n':
+            return False
+        
 #leggo il dataset csv (in cui è stata eseguita una pivoting table)
 path = "G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\test2.csv"
 df = pd.read_csv(path,sep=';')
@@ -55,39 +63,44 @@ for i in range(1,df.shape[1]):
     labeled_df.iloc[:,i] = colonna      #sostituisco la colonna nel nuovo dataset.    
     
     
-#Genero la heatmap
-ax = plt.axes()
-sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Blues")   #
-ax.set_title('Heatmap no look Ahead')
-ax.xlabel = "Sensore"
-ax.ylabel = "Giorno"
-plt.figure()
+chHeatmap = askInput("Generare la heatmap? ")
+if chHeatmap:
+    la = input("Inserire lookahead (in giorni) : ")
+    #Genero la heatmap
+    ax = plt.axes()
+    sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Blues")   #
+    ax.set_title('Heatmap no look Ahead')
+    ax.xlabel = "Sensore"
+    ax.ylabel = "Giorno"
+    plt.figure()
+    
+    
+    
+    #Avvio la procedura di lookup 
+    print("Avvio procedura lookup")
+    la_days = int(la)                            #Parametro di look-ahead possible modificarlo
+    for j in range(1,df.shape[1]):
+        colonna = labeled_df[labeled_df.columns[j]]
+        i = 1
+        while(i<len(colonna)):       
+            if colonna[i] == 1:             #Condizione se anomalia
+                #estendo l'anomalia
+                for i in range(i,i+la_days):
+                    colonna[i] = 1               
+            i = i + 1  
+        labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.
+    
+    
+    #Genero la heatmap 2 (con look-ahead)
+    ax = plt.axes()
+    sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Oranges")   
+    title = "Look ahead " + str(la_days)
+    ax.set_title(title)
+    ax.xlabel = "Sensore"
+    ax.ylabel = "Giorno"
+    plt.figure()
+    
 
-
-
-#Avvio la procedura di lookup 
-print("Avvio procedura lookup")
-la_days = 7                            #Parametro di look-ahead possible modificarlo
-for j in range(1,df.shape[1]):
-    colonna = labeled_df[labeled_df.columns[j]]
-    i = 1
-    while(i<len(colonna)):       
-        if colonna[i] == 1:             #Condizione se anomalia
-            #estendo l'anomalia
-            for i in range(i,i+la_days):
-                colonna[i] = 1               
-        i = i + 1  
-    labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.
-
-
-#Genero la heatmap 2 (con look-ahead)
-ax = plt.axes()
-sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Oranges")   
-title = "Look ahead " + str(la_days)
-ax.set_title(title)
-ax.xlabel = "Sensore"
-ax.ylabel = "Giorno"
-plt.figure()
 
 
 
