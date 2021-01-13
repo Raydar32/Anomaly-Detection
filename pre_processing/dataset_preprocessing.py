@@ -36,6 +36,12 @@ B  = '\033[34m'
 P  = '\033[35m' 
 
 
+def hasAnomaly(row):
+    for item in row:
+        if item==1:
+            return True    
+    return False
+
 def askInput(question):
     while "the answer is invalid":
         reply = str(input(question+' (y/n): ')).lower().strip()
@@ -88,8 +94,7 @@ if chHeatmap:
     ax.ylabel = "Giorno"
     plt.figure()
     
-    
-    
+        
     #Avvio la procedura di lookup 
     print("Avvio procedura lookup")
     la_days = int(la)                            #Parametro di look-ahead possible modificarlo
@@ -136,8 +141,10 @@ for item in u_labels:
    for i in range(0,len(filtered)):
        row.append(filtered.index[i])
    table.append(row)
-
 table.remove(table[0])
+
+
+
 i = 0
 for row in table:
     print(G+"Cluster ", i," Num. Items " + str(len(row)) + W)
@@ -145,6 +152,16 @@ for row in table:
     pprint(row)
     i = i + 1
 print(G+"Silhouette score: ", str(silhouetteScore) +W)
+
+#Calcolo il numero di anomalie per cluster
+i = 0
+for row in table:
+    anomCounter = 0
+    for item in row:
+        if hasAnomaly(labeled_df[item]):
+            anomCounter = anomCounter + 1
+    print("Cluster ", i , " Anomalie: ", anomCounter)
+    i = i + 1
 
 
    
