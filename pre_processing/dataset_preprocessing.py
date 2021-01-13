@@ -19,7 +19,7 @@ Created on Wed Dec 30 17:17:20 2020
 """
 
 #Import.. 
-from pprint import pprint
+
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -36,6 +36,31 @@ B  = '\033[34m'
 P  = '\033[35m' 
 
 
+def labelDataset(df):
+    column_names_to_not_normalize = ['Data']
+    column_names_to_normalize = [x for x in list(df) if x not in column_names_to_not_normalize ]
+    
+    #normalizzo i dati del dataset, ogni colonna con il massimo.
+    for col in column_names_to_normalize:
+        df[col] = df[col]/df[col].max()
+    
+    #inizio il labeling delle anomalie, uso un nuovo dataset  "labeled_df"
+    labeled_df = df.copy()
+    for i in range(1,df.shape[1]):
+        colonna = df[df.columns[i]]
+        #print("Colonna in esame : ", i )
+        col_mean = colonna.mean()
+        col_std = colonna.std()
+        treshold = col_mean + 3*col_std     #Legge empirica per anomaly detection
+        for j in range(0,colonna.size):     #Ogni elemento della colonna setto 1 se anomalo, 0 altrimenti
+            item = colonna[j]
+            if item >= treshold:
+                colonna[j] = 1
+            else:
+                colonna[j] = 0  
+        labeled_df.iloc[:,i] = colonna      #sostituisco la colonna nel nuovo dataset.   
+    return labeled_df
+
 def hasAnomaly(row):
     for item in row:
         if item==1:
@@ -50,39 +75,27 @@ def askInput(question):
         if reply[0] == 'n':
             return False
         
-        
+def spyder_cls():
+    try:
+        from IPython import get_ipython
+        get_ipython().magic('clear')
+        get_ipython().magic('reset -f')
+    except:
+        pass
+
 #leggo il dataset csv (in cui è stata eseguita una pivoting table)
 path = "G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\test2.csv"
 df = pd.read_csv(path,sep=';')
-
 #Escludo la data dalla normalizzazione
 column_names_to_not_normalize = ['Data']
 column_names_to_normalize = [x for x in list(df) if x not in column_names_to_not_normalize ]
 
-#normalizzo i dati del dataset, ogni colonna con il massimo.
-for col in column_names_to_normalize:
-    df[col] = df[col]/df[col].max()
+labeled_df = labelDataset(df)
 
-#inizio il labeling delle anomalie, uso un nuovo dataset  "labeled_df"
-labeled_df = df.copy()
-for i in range(1,df.shape[1]):
-    colonna = df[df.columns[i]]
-    #print("Colonna in esame : ", i )
-    col_mean = colonna.mean()
-    col_std = colonna.std()
-    treshold = col_mean + 3*col_std     #Legge empirica per anomaly detection
-    for j in range(0,colonna.size):     #Ogni elemento della colonna setto 1 se anomalo, 0 altrimenti
-        item = colonna[j]
-        if item >= treshold:
-            colonna[j] = 1
-        else:
-            colonna[j] = 0  
-    labeled_df.iloc[:,i] = colonna      #sostituisco la colonna nel nuovo dataset.    
-    
-    
+#spyder_cls()
 #Generazione heatmap 
-#chHeatmap = askInput("Generare la heatmap? ")
-chHeatmap = False #debug
+chHeatmap = askInput("Generare la heatmap? ")
+#chHeatmap = False #debug
 if chHeatmap:
     print("--------- Heatmap & Labeling anomalie ---------")
     la = input("Inserire lookahead (in giorni) : ")
@@ -107,8 +120,7 @@ if chHeatmap:
                 for i in range(i,i+la_days):
                     colonna[i] = 1               
             i = i + 1  
-        labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.
-    
+        labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.  
     
     #Genero la heatmap 2 (con look-ahead)
     ax = plt.axes()
@@ -118,6 +130,7 @@ if chHeatmap:
     ax.xlabel = "Sensore"
     ax.ylabel = "Giorno"
     plt.figure()
+    
     
 
 
@@ -144,23 +157,23 @@ for item in u_labels:
 table.remove(table[0])
 
 
-
 i = 0
 for row in table:
-    print(G+"Cluster ", i," Num. Items " + str(len(row)) + W)
+    print(G+"Cluster ", i, " ", W)
     print("Sensori :")
-    pprint(row)
+    print(row)
     i = i + 1
-print(G+"Silhouette score: ", str(silhouetteScore) +W)
-
 #Calcolo il numero di anomalie per cluster
+
+print("\n\n-------------------- Summary ---------------------")
+print("Silhouette score: ", str(silhouetteScore))
 i = 0
 for row in table:
     anomCounter = 0
     for item in row:
         if hasAnomaly(labeled_df[item]):
             anomCounter = anomCounter + 1
-    print("Cluster ", i , " Anomalie: ", anomCounter)
+    print("Cluster ", i , "Lunghezza ",str(len(row)),  "n. Anomalie: ", anomCounter, " percent. ", str(round(anomCounter/len(row),2)))
     i = i + 1
 
 
