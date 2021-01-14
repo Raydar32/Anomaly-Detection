@@ -139,7 +139,7 @@ clusters = int(input("Inserire num clusters > "))
 
 
 anomaly_df = labeled_df[column_names_to_normalize].T
-kmeans_model = KMeans(n_clusters = clusters,random_state=2,n_init=10,algorithm="auto")
+kmeans_model = KMeans(n_clusters = clusters,algorithm="auto")
 label = kmeans_model.fit_predict(anomaly_df) #Stampo le labels
 silhouetteScore = silhouette_score(anomaly_df, label)
 centroids = kmeans_model.cluster_centers_
