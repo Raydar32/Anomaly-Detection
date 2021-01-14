@@ -14,6 +14,7 @@ Created on Wed Dec 30 17:17:20 2020
 '                 - Anomaly detection empirica con regola (anomaly se  valore >mean + 3 std)
 '                 - Labeling 0/1 e creazione di label set
 '                 - Espansione dei giorni (TODO)
+'                 - Clustering.
 '--------------------------------------------------------------------------------------------
 
 """
@@ -26,6 +27,7 @@ import seaborn as sns
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics import silhouette_score
+from sklearn.decomposition import PCA
 
 #Colori per format output.
 W  = '\033[0m'  
@@ -37,9 +39,12 @@ P  = '\033[35m'
 
 
 def labelDataset(df):
+    # Con questo metodo si va ad eseguire il labeling del dataset, ovvero a 
+    # trovare le anomalie secondo la formula del paper.
+        
     column_names_to_not_normalize = ['Data']
     column_names_to_normalize = [x for x in list(df) if x not in column_names_to_not_normalize ]
-    
+  
     #normalizzo i dati del dataset, ogni colonna con il massimo.
     for col in column_names_to_normalize:
         df[col] = df[col]/df[col].max()
@@ -61,13 +66,18 @@ def labelDataset(df):
         labeled_df.iloc[:,i] = colonna      #sostituisco la colonna nel nuovo dataset.   
     return labeled_df
 
+
 def hasAnomaly(row):
+    # Semplice metodo booleano che preso un sensore restituisce
+    # True/False se ha rilevato un anomalia o meno.
     for item in row:
         if item==1:
             return True    
     return False
 
 def askInput(question):
+    # Metodo helper per interazione con utente.
+    #
     while "the answer is invalid":
         reply = str(input(question+' (y/n): ')).lower().strip()
         if reply[0] == 'y':
@@ -75,13 +85,23 @@ def askInput(question):
         if reply[0] == 'n':
             return False
         
-def spyder_cls():
-    try:
-        from IPython import get_ipython
-        get_ipython().magic('clear')
-        get_ipython().magic('reset -f')
-    except:
-        pass
+
+def plot_clusters_pca(anomaly_df,table):
+    # Metodo usato per ridurre le dimensioni del dataset
+    # Solo per ragioni di plot.    
+    pca = PCA(n_components=2)
+    reduced = pca.fit_transform(anomaly_df)
+    colors = ["red","blue","green","yellow"]
+    for idx,row in enumerate(table):    
+        for house in row:
+            print("Stampo sensore: ", house)
+            index = int(house.replace("Household",""))-1
+            plt.scatter(reduced[int(index)][0],reduced[int(index)][1],color = colors[idx],s=10)
+            
+        
+# Main.
+#
+
 
 #leggo il dataset csv (in cui è stata eseguita una pivoting table)
 path = "G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\test2.csv"
@@ -89,10 +109,9 @@ df = pd.read_csv(path,sep=';')
 #Escludo la data dalla normalizzazione
 column_names_to_not_normalize = ['Data']
 column_names_to_normalize = [x for x in list(df) if x not in column_names_to_not_normalize ]
-
 labeled_df = labelDataset(df)
 
-#spyder_cls()
+
 #Generazione heatmap 
 chHeatmap = askInput("Generare la heatmap? ")
 #chHeatmap = False #debug
@@ -105,9 +124,7 @@ if chHeatmap:
     ax.set_title('Heatmap no look Ahead')
     ax.xlabel = "Sensore"
     ax.ylabel = "Giorno"
-    plt.figure()
-    
-        
+    plt.figure()           
     #Avvio la procedura di lookup 
     print("Avvio procedura lookup")
     la_days = int(la)                            #Parametro di look-ahead possible modificarlo
@@ -120,8 +137,7 @@ if chHeatmap:
                 for i in range(i,i+la_days):
                     colonna[i] = 1               
             i = i + 1  
-        labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.  
-    
+        labeled_df.iloc[:,j] = colonna      #sostituisco la colonna con l'originale.      
     #Genero la heatmap 2 (con look-ahead)
     ax = plt.axes()
     sns.heatmap(labeled_df[column_names_to_normalize], ax = ax ,cmap="Oranges")   
@@ -132,20 +148,22 @@ if chHeatmap:
     plt.figure()
     
     
-
+# Avvio clustering
+#
 
 print("Avvio procedura di clustering")
 clusters = int(input("Inserire num clusters > "))
 
 
+#Algoritmo di clustering
 anomaly_df = labeled_df[column_names_to_normalize].T
-kmeans_model = KMeans(n_clusters = clusters,algorithm="auto")
-label = kmeans_model.fit_predict(anomaly_df) #Stampo le labels
-silhouetteScore = silhouette_score(anomaly_df, label)
-centroids = kmeans_model.cluster_centers_
-u_labels = np.unique(label)
+kmeans_model = KMeans(n_clusters = clusters)              #Impostazione del modello
+label = kmeans_model.fit_predict(anomaly_df)              #Acquisisco le labels
+silhouetteScore = silhouette_score(anomaly_df, label)     #Calcolo lo score medio
+centroids = kmeans_model.cluster_centers_                 #Identifico i centroidi
+u_labels = np.unique(label)                               #Identifico le labels per loop.
 
-table = [[]]
+table = [[]]      #Tabella dei cluster
 
 
 for item in u_labels:
@@ -157,14 +175,16 @@ for item in u_labels:
 table.remove(table[0])
 
 
+# Print & Plot.
+#
 i = 0
 for row in table:
     print(G+"Cluster ", i, " ", W)
     print("Sensori :")
     print(row)
     i = i + 1
+    
 #Calcolo il numero di anomalie per cluster
-
 print("\n\n-------------------- Summary ---------------------")
 print("Silhouette score: ", str(silhouetteScore))
 i = 0
@@ -176,11 +196,8 @@ for row in table:
     print("Cluster ", i , "Lunghezza ",str(len(row)),  "n. Anomalie: ", anomCounter, " percent. ", str(round(anomCounter/len(row),2)))
     i = i + 1
 
-
+plot_clusters_pca(anomaly_df,table)     #Solo per plot.
    
-   
-
-
 
 
 
