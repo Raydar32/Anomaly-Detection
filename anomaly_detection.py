@@ -1,9 +1,20 @@
+# | Author: Alessandro Mini 
+# | Assignment for D.D.M Lab @ University of Florence.
+
+
 import seaborn as sns
-import matplotlib.pyplot as plt                   # For data visualization
+import matplotlib.pyplot as plt                   
 import pandas as pd
 
+
          
-def mark_and_extend_anomalies(df,look_ahead):
+def mark_and_extend_anomalies(df_base,look_ahead):                  
+    """
+    mark_and_extend_anomalies(df_base,look_ahead):   
+    This method find and extends the anomalies given a lookahead.
+    it returns a new dataset in order to use multiple versions.
+    """
+    df = df_base.copy(deep=True)
     for index, row in df.iterrows():
         mean = row.mean()
         std = row.std()
@@ -26,8 +37,12 @@ def mark_and_extend_anomalies(df,look_ahead):
             i = i + 1
             
     return df
-   
+
 def sort_dataset_by_date(df):
+    """
+    sort_dataset_by_date(df):
+    This method sorts a dataset by the "Time" field
+    """
     df.reset_index(inplace=True)
     df['Time']=pd.to_datetime(df['Time'])
     df = df.sort_values(by="Time")
@@ -35,6 +50,10 @@ def sort_dataset_by_date(df):
     return df
     
 def import_normalize_dataset(path):    
+    """
+    import_normalize_dataset(path)
+    This method import and normalize the base dataset.
+    """
     df = pd.read_csv(path,sep=";")    
     df["Time"] = pd.to_datetime(df["Time"])
     df['Time'] = df['Time'].dt.strftime('%d/%m/%Y')    
@@ -46,6 +65,10 @@ def import_normalize_dataset(path):
     return aggregated_df
 
 def plot_anomalies_heatmap(anomalies,look_ahead):
+    """
+    plot_anomalies_heatmap(anomalies,look_ahead)
+    This method plots an heatmap using seaborn.
+    """
     ax = plt.axes()
     sns.heatmap(anomalies.T, ax = ax ,cmap="Oranges")   
     title = "Look ahead " + str(look_ahead)
