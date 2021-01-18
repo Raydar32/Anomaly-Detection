@@ -5,11 +5,8 @@
 import seaborn as sns
 import matplotlib.pyplot as plt                   
 import pandas as pd
-import random
-from tslearn.metrics import dtw
-import numpy as np   
-
-    
+import time
+from KMeans import KMeansClusterizer
 
 def mark_and_extend_anomalies(df_base,look_ahead):                  
     """
@@ -81,39 +78,14 @@ def plot_anomalies_heatmap(anomalies,look_ahead):
     plt.show()  
 
 
-
-    
-def k_means_assign_points(clusters,centroids):
-    for i in range(0,anomalies.shape[0]):
-        riga = anomalies.iloc[i]
-        best_fit = 0
-        distance = 10
-        #step 1: assegno ognuno al suo cluster
-        for j in range(0,len(centroids)):
-            if(dtw(riga,centroids[j])<distance):
-                best_fit = j
-                distance = (dtw(riga,centroids[j]))        
-        clusters[best_fit-1].append(i)
-    return clusters,centroids
-
-
-def k_means_recalc_centroid(anomalies,centroids):  
-    for i in range(0,len(clusters)):
-        for j in range(0,len(clusters[i])):
-            indice = clusters[i][j]
-            riga = anomalies.iloc[indice]
-            centroids[i] = centroids[i] + riga
-    
-    for k in range(0,len(centroids)):
-        centroids[k] = np.divide(centroids[k],len(clusters[k]))
-    return centroids
-
-
 def hasAnomaly(serie):
     for item in serie:
         if item == 1:
             return True
     return False
+
+
+
 df = import_normalize_dataset("G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\originalcsv.csv")
 df = sort_dataset_by_date(df)
 df = df.T
@@ -122,31 +94,28 @@ look_ahead = 1
 anomalies = mark_and_extend_anomalies(df,look_ahead)
 #plot_anomalies_heatmap(anomalies,look_ahead)
 
-clusters = [[]]
-clusters.append([])
-centroids= [[]]
-centroids.append(anomalies.iloc[random.randint(0,200)].values)
-centroids.append(anomalies.iloc[random.randint(0,200)].values)
-centroids.pop(0)
+start_time = time.time()
+KM = KMeansClusterizer(anomalies,2,20,"euclid")
+KM.fit()
+clusters = KM.getClusters()
+centroids = KM.getCentroids()
+end_time = time.time()
 
 
-for i in range(1,3):
-    print("Iterazione ",i)
-    clusters[0].clear()
-    clusters[1].clear()
-    clusters,centroids = k_means_assign_points(clusters,centroids)
-    centroids = k_means_recalc_centroid(anomalies,centroids)
-    
-for i in range(0,len(clusters)):
-    a = 0
-    for j in range(0,len(clusters[i])):
-        casa = anomalies.iloc[clusters[i][j]]
-        if hasAnomaly(casa):
-            a = a + 1
-    print("Cluster ", i ," ha ", a ," anomalie")
+print ("------------------------------")
+print(" Algoritmo terminato in ", str(time.time() - start_time ),"s")
+print ("------------------------------")
+#---------- STAMPE -------------
+for i in range(0,len(centroids)):
+    plt.plot(centroids[i])
+plt.show()
 
-
-    
+for idx,cluster in enumerate(clusters):
+    cluster_sum = 0
+    for house in cluster:
+        if (hasAnomaly(anomalies.iloc[house])):
+            cluster_sum = cluster_sum + 1
+    print("Cluster: ", idx, " ha ", cluster_sum ," Anomalie su ", len(cluster))
 
             
             
