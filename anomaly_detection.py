@@ -95,7 +95,7 @@ anomalies = mark_and_extend_anomalies(df,look_ahead)
 #plot_anomalies_heatmap(anomalies,look_ahead)
 
 start_time = time.time()
-KM = KMeansClusterizer(anomalies,2,20,"euclid")
+KM = KMeansClusterizer(anomalies,2,10,"euclid")
 KM.fit()
 clusters = KM.getClusters()
 centroids = KM.getCentroids()
