@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import time
 from KMeans import KMeansClusterizer
-
+from sklearn.metrics import silhouette_score
 def mark_and_extend_anomalies(df_base,look_ahead):                  
     """
     mark_and_extend_anomalies(df_base,look_ahead):   
@@ -84,7 +84,15 @@ def hasAnomaly(serie):
             return True
     return False
 
-
+def buildClustersLabels(clusters):
+    labels = [0]*200
+    k = 0
+    for cluster in clusters:
+        for item in cluster:
+            labels[item] = k
+        k = k + 1
+    return labels
+    
 
 df = import_normalize_dataset("G:\\GitHubRepo\\AnomalyDet\\Anomaly-Detection\\dataset\\originalcsv.csv")
 df = sort_dataset_by_date(df)
@@ -95,7 +103,7 @@ anomalies = mark_and_extend_anomalies(df,look_ahead)
 #plot_anomalies_heatmap(anomalies,look_ahead)
 
 start_time = time.time()
-KM = KMeansClusterizer(anomalies,2,10,"euclid")
+KM = KMeansClusterizer(anomalies,3,10,"euclid")
 KM.fit()
 clusters = KM.getClusters()
 centroids = KM.getCentroids()
@@ -117,7 +125,12 @@ for idx,cluster in enumerate(clusters):
             cluster_sum = cluster_sum + 1
     print("Cluster: ", idx, " ha ", cluster_sum ," Anomalie su ", len(cluster))
 
-            
+
+labels =  buildClustersLabels(clusters)
+score = silhouette_score(anomalies,labels, metric='euclidean')
+
+
+
             
         
     
