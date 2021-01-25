@@ -9,7 +9,7 @@ from tslearn.metrics import dtw
 
 import random
 import numpy as np
-
+from tslearn.barycenters import dtw_barycenter_averaging
 class KMeansClusterizer:
     
     def getClusters(self):
@@ -44,6 +44,8 @@ class KMeansClusterizer:
             centroids.append(anomalies.iloc[random.randint(0,200)].values)
         clusters.pop(0)
         centroids.pop(0)
+        for cluster in clusters:
+            cluster.append(random.randint(0,200))
         self.clusters = clusters
         self.centroids = centroids
         self.ITMAX = ITMAX
@@ -81,25 +83,35 @@ class KMeansClusterizer:
         Metodo che ricalcola il centroide sulla base del concetto
         di centro di massa.
         """
-        #per ogni cluster
-        for i in range(0,len(self.clusters)):
-            #prendo la casa contenuta nel cluster
-            for j in range(0,len(self.clusters[i])):
-                #ricostruisco l'indice del dataset originale
-                indice = self.clusters[i][j]
-                #prendo il valore dal datset della casa j-esima nel cluster i-esimo
-                riga = self.anomalies.iloc[indice]                
-                #accumulo i valori su ogni campo
-                self.centroids[i] = np.add(self.centroids[i],riga)        
-        #adesso divido ogni cluster per la sua size (secondo formula)
-        for k in range(0,len(self.centroids)):
-            #size
-            size = len(self.clusters[k])
-            #se un cluster è vuoto imposto size=1
-            if(size==0):
-                size=1            
-            #divisione
-            self.centroids[k] = np.divide(self.centroids[k],size)
+        #per ogni cluster, se dist. euclidea uso una media.
+        if self.distance_metric == "euclid":
+            for i in range(0,len(self.clusters)):
+                #prendo la casa contenuta nel cluster
+                for j in range(0,len(self.clusters[i])):
+                    #ricostruisco l'indice del dataset originale
+                    indice = self.clusters[i][j]
+                    #prendo il valore dal datset della casa j-esima nel cluster i-esimo
+                    riga = self.anomalies.iloc[indice]                
+                    #accumulo i valori su ogni campo
+                    self.centroids[i] = np.add(self.centroids[i],riga)        
+            #adesso divido ogni cluster per la sua size (secondo formula)
+            for k in range(0,len(self.centroids)):
+                #size
+                size = len(self.clusters[k])
+                #se un cluster è vuoto imposto size=1
+                if(size==0):
+                    size=1            
+                #divisione
+                self.centroids[k] = np.divide(self.centroids[k],size)
+        
+        #per distanza DTW uso DBA.
+        if self.distance_metric == "dtw":
+            for i in range(0,len(self.centroids)):
+                select = self.anomalies.iloc[self.clusters[i]]
+                if(select.shape[0]>0):
+                    self.centroids[i] = dtw_barycenter_averaging(select, max_iter=2)
+                
+                
             
     def clear_clusters(self):
         """

@@ -8,6 +8,8 @@ import pandas as pd
 import time
 from KMeans import KMeansClusterizer
 from sklearn.metrics import silhouette_score
+from tslearn.clustering import TimeSeriesKMeans 
+
 def mark_and_extend_anomalies(df_base,look_ahead):                  
     """
     mark_and_extend_anomalies(df_base,look_ahead):   
@@ -103,7 +105,7 @@ anomalies = mark_and_extend_anomalies(df,look_ahead)
 #plot_anomalies_heatmap(anomalies,look_ahead)
 
 start_time = time.time()
-KM = KMeansClusterizer(anomalies,3,10,"euclid")
+KM = KMeansClusterizer(anomalies,3,20,"dtw")
 KM.fit()
 clusters = KM.getClusters()
 centroids = KM.getCentroids()
@@ -128,10 +130,11 @@ for idx,cluster in enumerate(clusters):
 
 labels =  buildClustersLabels(clusters)
 score = silhouette_score(anomalies,labels, metric='euclidean')
+print(score)
 
 
-
-            
+# Per confronto
+km = TimeSeriesKMeans(n_clusters=3, metric="dtw", max_iter=20).fit(anomalies)            
         
     
         
